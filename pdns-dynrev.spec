@@ -1,12 +1,13 @@
 Summary: PowerDNS Dynamic Reverse Backend
 Name: pdns-dynrev
 Version: 0.9
-Release: 1
+Release: 2
 License: MIT
 Group: System Environment/Daemons
 Source: https://github.com/bevhost/PowerDNS-Dynamic-Reverse-Backend/archive/master.zip
 Packager: David Beveridge <dave@bevhost.com>
 Requires: python-netaddr py-radix python-IPy PyYAML pdns-backend-pipe
+BuildRequires: /usr/bin/pathfix.py
 BuildArch: noarch
 
 %description
@@ -15,6 +16,7 @@ forward lookup.
 
 %prep
 %autosetup -n PowerDNS-Dynamic-Reverse-Backend-master
+pathfix.py -pni "%{__python3} %{py3_shbang_opts}" . 
 
 %build
 
@@ -40,6 +42,9 @@ rm -rf %{buildroot}
 %attr(0644,root,root) %{_docdir}/%{name}/README
 
 %changelog
+* Thu Jun 27 2024 David Beveridge <dave@bevhost.com>
+- Use pathfix.py to set the shebang to python version
+
 * Sat Nov 09 2019 David Beveridge <dave@bevhost.com>
 - initial build
 
