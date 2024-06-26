@@ -1,4 +1,4 @@
-OK	pdns-dynamic-reverse-backend.py ready with 2 prefixes configured
+OK	pdns-dynamic-reverse-backend.py ready with 3 prefixes configured
 DATA	254.169.in-addr.arpa	IN	SOA	300	-1	ns0.example.com hostmaster.example.com 2017081616 10800 3600 604800 3600
 END
 DATA	0.0.254.169.in-addr.arpa	IN	PTR	300	-1	u0-l0.example.com
@@ -46,4 +46,5 @@ END
 DATA	1.0.168.192.in-addr.arpa	IN	PTR	300	-1	192-168-0-1.example.net
 END
 DATA	192-168-0-1.example.net	IN	A	300	-1	192.168.0.1
+END
 END

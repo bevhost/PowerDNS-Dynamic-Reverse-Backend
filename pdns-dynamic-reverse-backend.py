@@ -9,10 +9,6 @@ pdns.conf example:  passing command name, config file & log level
 launch=pipe
 pipe-command=/usr/sbin/pdns-dynamic-reverse-backend.py /etc/pdns/dynrev.yml 1
 pipe-timeout=500
-pipe-regex=^([0-9]|[a-f]|\.|\:)*\.(in\-addr|ip6)\.arpa|([a-z]|[0-9]|\-)*\.ip[4|6]\.example\.com$
-
-The pipe-regex is optional, it serves to limit queries send to this backend
-on a busy server.  You'll need to check that it matches all your queries.
 
 if you use other backends include them all in the one launch statement
 e.g.
@@ -55,7 +51,6 @@ import netaddr
 import IPy
 import radix
 import yaml
-import socket
 
 LOGLEVEL = 2
 CONFIG = 'dynrev.yml'
@@ -88,20 +83,6 @@ class HierDict(dict):
             if self._parent is None:
                 raise
             return self._parent[name]
-
-def check_ipv6(n):
-    try:
-        socket.inet_pton(socket.AF_INET6, n)
-        return True
-    except socket.error:
-        return False
-
-def check_ipv4(n):
-    try:
-        socket.inet_pton(socket.AF_INET, n)
-        return True
-    except socket.error:
-        return False
 
 def base36encode(n):
     s = ''
@@ -186,17 +167,12 @@ def parse(prefixes, rtree, fd, out):
                     try:
                         if key['replace']:
                             ipv6 = node.replace(key['replace'],':')
-                            if check_ipv6(ipv6):
-                                ipv6 = netaddr.IPAddress(ipv6)
-                            else:
-                                ipv6 = None
                         else:
                             node = base36decode(node)
                             ipv6 = netaddr.IPAddress(long(range.value) + long(node))
-                        if ipv6 and range.value <= ipv6.value <= range.value+range.size:
-                            out.write("DATA\t%s\t%s\tAAAA\t%d\t%s\t%s\n" % \
-                                (qname, qclass, key['ttl'], qid, ipv6))
-                            break
+                        out.write("DATA\t%s\t%s\tAAAA\t%d\t%s\t%s\n" % \
+                            (qname, qclass, key['ttl'], qid, ipv6))
+                        break
                     except ValueError:
                         node = None
 
@@ -208,17 +184,12 @@ def parse(prefixes, rtree, fd, out):
                     try:
                         if key['replace']:
                             ipv4 = node.replace(key['replace'],'.')
-                            if check_ipv4(ipv4):
-                                ipv4 = netaddr.IPAddress(ipv4)
-                            else:
-                                ipv4 = None
                         else:
                             node = base36decode(node)
                             ipv4 = netaddr.IPAddress(long(range.value) + long(node))
-                        if ipv4 and range.value <= ipv4.value <= range.value+range.size:
-                            out.write("DATA\t%s\t%s\tA\t%d\t%s\t%s\n" % \
-                                (qname, qclass, key['ttl'], qid, ipv4))
-                            break
+                        out.write("DATA\t%s\t%s\tA\t%d\t%s\t%s\n" % \
+                            (qname, qclass, key['ttl'], qid, ipv4))
+                        break
                     except ValueError:
                         log(3,'failed to base36 decode host value',node=node)
 
