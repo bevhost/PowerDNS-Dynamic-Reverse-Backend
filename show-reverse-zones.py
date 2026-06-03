@@ -103,7 +103,7 @@ def get_reverse_names(ip_network):
 
 def parse_config(config_path):
     with open(config_path) as config_file:
-        config_dict = yaml.load(config_file)
+        config_dict = yaml.safe_load(config_file)
 
     defaults = config_dict.get('defaults', {})
     if not 'replace' in defaults:
