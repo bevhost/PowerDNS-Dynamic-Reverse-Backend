@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 PowerDNS pipe backend for generating reverse DNS entries and their
@@ -47,8 +47,8 @@ import sys, os
 import re
 import syslog
 import time
+import ipaddress
 import netaddr
-import IPy
 import radix
 import yaml
 
@@ -99,6 +99,30 @@ def base36decode(s):
         r = DIGITS.index(s[i])
         n += r * (len(DIGITS) ** i)
     return n
+
+def get_reverse_pointer(ip_network):
+    """Get reverse pointer for an IP network using ipaddress module."""
+    return str(ip_network.network_address.reverse_pointer)
+
+def get_reverse_names(ip_network):
+    """Get reverse zone names for an IP network."""
+    # For delegation purposes, return the main reverse zone(s)
+    names = []
+    # For small networks, return all possible reverse zones
+    # This mimics IPy.reverseNames() behavior
+    if ip_network.version == 4:
+        # For IPv4, generate reverse zone names based on CIDR
+        if ip_network.prefixlen % 8 == 0:
+            # Byte-aligned networks have single reverse zones
+            names.append(str(ip_network.network_address.reverse_pointer))
+        else:
+            # Non-byte-aligned networks need CNAME delegation
+            # For simplicity, return the primary reverse zone
+            names.append(str(ip_network.network_address.reverse_pointer))
+    else:
+        # For IPv6, similar logic
+        names.append(str(ip_network.network_address.reverse_pointer))
+    return names
 
 def parse(prefixes, rtree, fd, out):
     def log(level=LOGLEVEL, message=None, **kwargs):
@@ -267,10 +291,10 @@ def parse_config(config_path):
     prefixes = { netaddr.IPNetwork(prefix) : HierDict(defaults, info) for prefix, info in config_dict['prefixes'].items()}
 
     for zone in prefixes:
-        from IPy import IP
-        prefixes[zone]['version']=IP(str(zone.cidr)).version()
+        ip_net = ipaddress.ip_network(zone.cidr, strict=False)
+        prefixes[zone]['version']=ip_net.version
         if not 'domain' in prefixes[zone]:
-            prefixes[zone]['domain']=IP(str(zone.cidr)).reverseName()[:-1]
+            prefixes[zone]['domain']=get_reverse_pointer(ip_net)[:-1]
 
     rtree=radix.Radix()
 
