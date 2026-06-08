@@ -214,7 +214,17 @@ def parse(prefixes, rtree, fd, out):
                             ipv6 = node.replace(key['replace'],':')
                         else:
                             node = base36decode(node)
-                            ipv6 = netaddr.IPAddress(long(range.value) + long(node))
+                            # Clamp node offset so resulting IP stays within the prefix
+                            base = int(getattr(range, 'network', range.value))
+                            try:
+                                broadcast = int(getattr(range, 'broadcast', range.value))
+                            except Exception:
+                                broadcast = base
+                            max_offset = max(0, broadcast - base)
+                            node_int = int(node)
+                            if node_int < 0 or node_int > max_offset:
+                                break
+                            ipv6 = netaddr.IPAddress(base + node_int)
                         out.write("DATA\t%s\t%s\tAAAA\t%d\t%s\t%s\n" % \
                             (qname, qclass, key['ttl'], qid, ipv6))
                         break
@@ -231,7 +241,17 @@ def parse(prefixes, rtree, fd, out):
                             ipv4 = node.replace(key['replace'],'.')
                         else:
                             node = base36decode(node)
-                            ipv4 = netaddr.IPAddress(long(range.value) + long(node))
+                            # Clamp node offset so resulting IP stays within the prefix
+                            base = int(getattr(range, 'network', range.value))
+                            try:
+                                broadcast = int(getattr(range, 'broadcast', range.value))
+                            except Exception:
+                                broadcast = base
+                            max_offset = max(0, broadcast - base)
+                            node_int = int(node)
+                            if node_int < 0 or node_int > max_offset:
+                                break
+                            ipv4 = netaddr.IPAddress(base + node_int)
                         out.write("DATA\t%s\t%s\tA\t%d\t%s\t%s\n" % \
                             (qname, qclass, key['ttl'], qid, ipv4))
                         break
