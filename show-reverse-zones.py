@@ -78,8 +78,29 @@ class HierDict(dict):
             return self._parent[name]
 
 def get_reverse_pointer(ip_network):
-    """Get reverse pointer for an IP network using ipaddress module."""
-    return str(ip_network.network_address.reverse_pointer)
+    """Get reverse pointer for an IP network zone (not host-level)."""
+    # Get the full reverse pointer for the network address
+    full_pointer = str(ip_network.network_address.reverse_pointer)
+
+    if ip_network.version == 4:
+        # IPv4: reverse_pointer has octets separated by dots
+        # For a /16, we need to keep only the last 2 octets (network bits / 8)
+        # For a /24, we need to keep only the last 3 octets
+        num_octets_to_keep = ip_network.prefixlen // 8
+        labels = full_pointer.split('.')
+        # labels = ['0', '0', '254', '169', 'in-addr', 'arpa']
+        # For /16: keep last 2 octets before 'in-addr.arpa' = labels[2:4] + ['in-addr', 'arpa']
+        network_labels = labels[4 - num_octets_to_keep:4] + labels[4:]
+        return '.'.join(network_labels)
+    else:
+        # IPv6: reverse_pointer has nibbles separated by dots
+        # For a /64, we need to keep 64 bits / 4 bits per nibble = 16 nibbles
+        num_nibbles_to_keep = ip_network.prefixlen // 4
+        labels = full_pointer.split('.')
+        # Keep the last num_nibbles_to_keep labels before 'ip6.arpa'
+        # labels has 32 nibbles + 2 = 34 elements for full IPv6
+        network_labels = labels[32 - num_nibbles_to_keep:32] + labels[32:]
+        return '.'.join(network_labels)
 
 def get_reverse_names(ip_network):
     """Get reverse zone names for an IP network."""
